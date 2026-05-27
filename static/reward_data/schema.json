@@ -1,0 +1,50 @@
+{
+  "_comment": "Schema for ViTaL reward visualizer. Path: static/reward_data/{task}/trial_{N}.json",
+
+  "n_steps": 80,
+
+  "visual_gt_frames":    ["static/reward_data/pipette/trial_1/visual_gt/0000.jpg",    "..."],
+  "visual_pred_frames":  ["static/reward_data/pipette/trial_1/visual_pred/0000.jpg",  "..."],
+  "tactile_gt_frames":   ["static/reward_data/pipette/trial_1/tactile_gt/0000.jpg",   "..."],
+  "tactile_pred_frames": ["static/reward_data/pipette/trial_1/tactile_pred/0000.jpg", "..."],
+
+  "visual_phases": [
+    {
+      "label":      "transfer to yellow cup",
+      "gt_reward":   [0.12, 0.18, 0.25, "... (n_steps values)"],
+      "pred_reward": [0.10, 0.15, 0.22, "... (n_steps values)"]
+    },
+    {
+      "label":      "transfer to blue cup",
+      "gt_reward":   ["..."],
+      "pred_reward": ["..."]
+    }
+  ],
+
+  "tactile_phases": [
+    {
+      "label":      "light contact",
+      "gt_reward":   ["..."],
+      "pred_reward": ["..."]
+    },
+    {
+      "label":      "adequate force",
+      "gt_reward":   ["..."],
+      "pred_reward": ["..."]
+    },
+    {
+      "label":      "excessive force",
+      "gt_reward":   ["..."],
+      "pred_reward": ["..."]
+    }
+  ],
+
+  "_notes": [
+    "All four *_frames arrays are optional; placeholder images shown if omitted.",
+    "visual_phases and tactile_phases can each have 1–5 entries.",
+    "gt_reward = reward computed from real observations.",
+    "pred_reward = reward computed from world-model predicted observations.",
+    "Visual and tactile plots use independent Y-axes (auto-scaled per data).",
+    "solid line = GT, dashed line = Predicted; colour encodes the phase."
+  ]
+}
