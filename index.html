@@ -1,0 +1,847 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ViTaL: Inference-time Policy Steering via Vision and Touch</title>
+  <link rel="stylesheet" href="static/css/style.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+</head>
+<body>
+
+<!-- ─────────────── HEADER ─────────────── -->
+<header class="site-header">
+  <span class="venue-badge">CoRL 2026</span>
+</header>
+
+<!-- ─────────────── HERO ─────────────── -->
+<section class="hero">
+  <div class="container">
+    <h1 class="paper-title">
+      Inference-time Policy Steering via<br>
+      <span class="accent">Vision and Touch</span>
+    </h1>
+
+    <div class="authors">
+      <span class="author anon">Anonymous Authors</span>
+    </div>
+
+    <div class="links">
+      <a class="btn" href="corl2026vital.pdf" target="_blank">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+        Paper
+      </a>
+      <span class="btn btn-soon">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z"/></svg>
+        Code <span class="btn-soon-tag">Coming Soon</span>
+      </span>
+    </div>
+  </div>
+</section>
+
+<!-- ─────────────── TEASER VIDEO ─────────────── -->
+<section class="section" id="teaser">
+  <div class="container container-wide">
+    <div class="teaser-video-wrap">
+      <!-- Replace src with your teaser video file -->
+      <video autoplay muted loop playsinline>
+        <source src="static/videos/teaser.mp4" type="video/mp4" />
+      </video>
+      <!-- Fallback placeholder shown if video is missing -->
+      <div class="video-placeholder" id="teaser-placeholder">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+        <span>Teaser video — add <code>static/videos/teaser.mp4</code></span>
+      </div>
+    </div>
+    <p class="video-caption center">
+      <strong>ViTaL</strong> steers a pre-trained diffusion policy using bi-level visuo-tactile
+      guidance — visual mode selection at long horizon, tactile refinement at short horizon.
+    </p>
+  </div>
+</section>
+
+<!-- ─────────────── ABSTRACT ─────────────── -->
+<section class="section section-alt" id="abstract">
+  <div class="container container-narrow">
+    <h2>Abstract</h2>
+    <p>
+      Inference-time steering adapts pre-trained generative robot policies during
+      deployment by verifying candidate actions before execution. While prior methods
+      typically perform this verification only with visual observations, vision alone
+      is often insufficient for contact-rich manipulation, where success depends on
+      both global task progress and subtle local interactions such as contact force.
+      We introduce <strong>ViTaL</strong>, a visuo-tactile inference-time steering
+      framework that formulates multimodal guidance as a bi-level optimization problem.
+      At the high level, visual sampling-and-verification performs long-horizon mode
+      selection, deciding <em>what</em> behavior the robot should execute. At the low
+      level, tactile-guided diffusion editing refines the selected action sequence over
+      a shorter horizon to satisfy local contact requirements. To support outcome-based
+      steering, ViTaL learns a visuo-tactile latent world model and employs semantically
+      aligned visual and tactile verifiers, including a novel text-conditioned tactile
+      reward that scores predicted tactile futures directly in latent space. Across
+      three real-world contact-rich manipulation tasks, ViTaL improves overall success
+      by <strong>51%</strong> over the base policy, outperforms unimodal steering by at
+      least <strong>33%</strong>, and exceeds naive multimodal fusion by at least
+      <strong>20%</strong>. Website:
+      <a href="https://corl2026vital.github.io/" target="_blank" rel="noopener">corl2026vital.github.io</a>.
+    </p>
+  </div>
+</section>
+
+<!-- ─────────────── METHOD ─────────────── -->
+<section class="section" id="method">
+  <div class="container">
+    <h2>Method</h2>
+    <p class="section-subtitle">
+      ViTaL decomposes multimodal steering into a bi-level optimization:
+      long-horizon visual mode selection followed by short-horizon tactile refinement.
+    </p>
+
+    <figure class="front-figure">
+      <img src="static/images/front_figure.png"
+           alt="ViTaL overview: visual mode selection and tactile contact refinement" />
+      <figcaption>
+        <strong>Multi-Modal Policy Steering.</strong>
+        ViTaL selects visual modes (which cup to target) and refines local contact
+        (grasp force, slip avoidance), steering the base policy toward actions that
+        satisfy both task goals and contact constraints. The high-level visual verifier
+        picks the globally best action sequence; the low-level tactile verifier refines
+        the first few steps via diffusion editing.
+      </figcaption>
+    </figure>
+  </div>
+</section>
+
+<!-- ─────────────── 20-TRIAL GRID ─────────────── -->
+<section class="section section-alt" id="trials">
+  <div class="container-wide">
+    <h2>Evaluation of ViTaL</h2>
+    <p class="section-subtitle">
+      Multimodal Visuo-Tactile Policy Steering — all 20 evaluation trials per task
+      played simultaneously. Each cell shows one independent rollout; double click the video to view in full screen.
+    </p>
+
+    <!-- Task tabs -->
+    <div class="task-tabs" id="trial-tabs">
+      <button class="tab-btn active" data-task="pipette">Pipette</button>
+      <button class="tab-btn" data-task="wiping">Wiping</button>
+      <button class="tab-btn" data-task="insertion">Insertion</button>
+    </div>
+
+    <!-- 20-video grid — one panel per task -->
+    <div class="trial-panel active" id="trials-pipette">
+
+      <!-- Group 1: Blue cup (episodes 0–9) -->
+      <div class="trial-group-header blue-cup">
+        <span class="trial-group-dot"></span>
+        Instruction: Transfer the liquid to the <strong>blue cup</strong> and return (Trials 1–10)
+      </div>
+      <div class="trial-grid trial-grid-dual">
+        <div class="trial-cell" data-trial="1">
+          <div class="trial-dual-videos">
+            <video muted loop playsinline><source src="static/videos/pipette/episode_00/camera_0.mp4" type="video/mp4"/></video>
+            <video muted loop playsinline><source src="static/videos/pipette/episode_00/camera_2.mp4" type="video/mp4"/></video>
+          </div>
+          <span class="trial-label">Trial 1</span>
+        </div>
+        <div class="trial-cell" data-trial="2">
+          <div class="trial-dual-videos">
+            <video muted loop playsinline><source src="static/videos/pipette/episode_01/camera_0.mp4" type="video/mp4"/></video>
+            <video muted loop playsinline><source src="static/videos/pipette/episode_01/camera_2.mp4" type="video/mp4"/></video>
+          </div>
+          <span class="trial-label">Trial 2</span>
+        </div>
+        <div class="trial-cell" data-trial="3">
+          <div class="trial-dual-videos">
+            <video muted loop playsinline><source src="static/videos/pipette/episode_02/camera_0.mp4" type="video/mp4"/></video>
+            <video muted loop playsinline><source src="static/videos/pipette/episode_02/camera_2.mp4" type="video/mp4"/></video>
+          </div>
+          <span class="trial-label">Trial 3</span>
+        </div>
+        <div class="trial-cell" data-trial="4">
+          <div class="trial-dual-videos">
+            <video muted loop playsinline><source src="static/videos/pipette/episode_03/camera_0.mp4" type="video/mp4"/></video>
+            <video muted loop playsinline><source src="static/videos/pipette/episode_03/camera_2.mp4" type="video/mp4"/></video>
+          </div>
+          <span class="trial-label">Trial 4</span>
+        </div>
+        <div class="trial-cell" data-trial="5">
+          <div class="trial-dual-videos">
+            <video muted loop playsinline><source src="static/videos/pipette/episode_04/camera_0.mp4" type="video/mp4"/></video>
+            <video muted loop playsinline><source src="static/videos/pipette/episode_04/camera_2.mp4" type="video/mp4"/></video>
+          </div>
+          <span class="trial-label">Trial 5</span>
+        </div>
+        <div class="trial-cell" data-trial="6">
+          <div class="trial-dual-videos">
+            <video muted loop playsinline><source src="static/videos/pipette/episode_05/camera_0.mp4" type="video/mp4"/></video>
+            <video muted loop playsinline><source src="static/videos/pipette/episode_05/camera_2.mp4" type="video/mp4"/></video>
+          </div>
+          <span class="trial-label">Trial 6</span>
+        </div>
+        <div class="trial-cell" data-trial="7">
+          <div class="trial-dual-videos">
+            <video muted loop playsinline><source src="static/videos/pipette/episode_06/camera_0.mp4" type="video/mp4"/></video>
+            <video muted loop playsinline><source src="static/videos/pipette/episode_06/camera_2.mp4" type="video/mp4"/></video>
+          </div>
+          <span class="trial-label">Trial 7</span>
+        </div>
+        <div class="trial-cell" data-trial="8">
+          <div class="trial-dual-videos">
+            <video muted loop playsinline><source src="static/videos/pipette/episode_07/camera_0.mp4" type="video/mp4"/></video>
+            <video muted loop playsinline><source src="static/videos/pipette/episode_07/camera_2.mp4" type="video/mp4"/></video>
+          </div>
+          <span class="trial-label">Trial 8</span>
+        </div>
+        <div class="trial-cell" data-trial="9">
+          <div class="trial-dual-videos">
+            <video muted loop playsinline><source src="static/videos/pipette/episode_08/camera_0.mp4" type="video/mp4"/></video>
+            <video muted loop playsinline><source src="static/videos/pipette/episode_08/camera_2.mp4" type="video/mp4"/></video>
+          </div>
+          <span class="trial-label">Trial 9</span>
+        </div>
+        <div class="trial-cell" data-trial="10">
+          <div class="trial-dual-videos">
+            <video muted loop playsinline><source src="static/videos/pipette/episode_09/camera_0.mp4" type="video/mp4"/></video>
+            <video muted loop playsinline><source src="static/videos/pipette/episode_09/camera_2.mp4" type="video/mp4"/></video>
+          </div>
+          <span class="trial-label">Trial 10</span>
+        </div>
+      </div>
+
+      <!-- Group 2: Yellow cup (episodes 10–19) -->
+      <div class="trial-group-header yellow-cup">
+        <span class="trial-group-dot"></span>
+        Instruction: Transfer the liquid to the <strong>yellow cup</strong> and return (Trials 11–20)
+      </div>
+      <div class="trial-grid trial-grid-dual">
+        <div class="trial-cell" data-trial="11">
+          <div class="trial-dual-videos">
+            <video muted loop playsinline><source src="static/videos/pipette/episode_10/camera_0.mp4" type="video/mp4"/></video>
+            <video muted loop playsinline><source src="static/videos/pipette/episode_10/camera_2.mp4" type="video/mp4"/></video>
+          </div>
+          <span class="trial-label">Trial 11</span>
+        </div>
+        <div class="trial-cell" data-trial="12">
+          <div class="trial-dual-videos">
+            <video muted loop playsinline><source src="static/videos/pipette/episode_11/camera_0.mp4" type="video/mp4"/></video>
+            <video muted loop playsinline><source src="static/videos/pipette/episode_11/camera_2.mp4" type="video/mp4"/></video>
+          </div>
+          <span class="trial-label">Trial 12</span>
+        </div>
+        <div class="trial-cell" data-trial="13">
+          <div class="trial-dual-videos">
+            <video muted loop playsinline><source src="static/videos/pipette/episode_12/camera_0.mp4" type="video/mp4"/></video>
+            <video muted loop playsinline><source src="static/videos/pipette/episode_12/camera_2.mp4" type="video/mp4"/></video>
+          </div>
+          <span class="trial-label">Trial 13</span>
+        </div>
+        <div class="trial-cell" data-trial="14">
+          <div class="trial-dual-videos">
+            <video muted loop playsinline><source src="static/videos/pipette/episode_13/camera_0.mp4" type="video/mp4"/></video>
+            <video muted loop playsinline><source src="static/videos/pipette/episode_13/camera_2.mp4" type="video/mp4"/></video>
+          </div>
+          <span class="trial-label">Trial 14</span>
+        </div>
+        <div class="trial-cell" data-trial="15">
+          <div class="trial-dual-videos">
+            <video muted loop playsinline><source src="static/videos/pipette/episode_14/camera_0.mp4" type="video/mp4"/></video>
+            <video muted loop playsinline><source src="static/videos/pipette/episode_14/camera_2.mp4" type="video/mp4"/></video>
+          </div>
+          <span class="trial-label">Trial 15</span>
+        </div>
+        <div class="trial-cell" data-trial="16">
+          <div class="trial-dual-videos">
+            <video muted loop playsinline><source src="static/videos/pipette/episode_15/camera_0.mp4" type="video/mp4"/></video>
+            <video muted loop playsinline><source src="static/videos/pipette/episode_15/camera_2.mp4" type="video/mp4"/></video>
+          </div>
+          <span class="trial-label">Trial 16</span>
+        </div>
+        <div class="trial-cell" data-trial="17">
+          <div class="trial-dual-videos">
+            <video muted loop playsinline><source src="static/videos/pipette/episode_16/camera_0.mp4" type="video/mp4"/></video>
+            <video muted loop playsinline><source src="static/videos/pipette/episode_16/camera_2.mp4" type="video/mp4"/></video>
+          </div>
+          <span class="trial-label">Trial 17</span>
+        </div>
+        <div class="trial-cell" data-trial="18">
+          <div class="trial-dual-videos">
+            <video muted loop playsinline><source src="static/videos/pipette/episode_17/camera_0.mp4" type="video/mp4"/></video>
+            <video muted loop playsinline><source src="static/videos/pipette/episode_17/camera_2.mp4" type="video/mp4"/></video>
+          </div>
+          <span class="trial-label">Trial 18</span>
+        </div>
+        <div class="trial-cell" data-trial="19">
+          <div class="trial-dual-videos">
+            <video muted loop playsinline><source src="static/videos/pipette/episode_18/camera_0.mp4" type="video/mp4"/></video>
+            <video muted loop playsinline><source src="static/videos/pipette/episode_18/camera_2.mp4" type="video/mp4"/></video>
+          </div>
+          <span class="trial-label">Trial 19</span>
+        </div>
+        <div class="trial-cell" data-trial="20">
+          <div class="trial-dual-videos">
+            <video muted loop playsinline><source src="static/videos/pipette/episode_19/camera_0.mp4" type="video/mp4"/></video>
+            <video muted loop playsinline><source src="static/videos/pipette/episode_19/camera_2.mp4" type="video/mp4"/></video>
+          </div>
+          <span class="trial-label">Trial 20</span>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="trial-panel" id="trials-wiping">
+
+      <!-- Group 1: Orange marks (episodes 6,8,9,3,5,10,11,12,13,14) -->
+      <div class="trial-group-header" style="background:#fff7ed;color:#9a3412;border-left:3px solid #ea580c;">
+        <span class="trial-group-dot" style="background:#ea580c;"></span>
+        Instruction: Wipe the <strong>orange marks</strong> from the whiteboard (Trials 1–10)
+      </div>
+      <div class="trial-grid trial-grid-dual">
+        <div class="trial-cell" data-trial="1" data-episode="6">
+          <div class="trial-dual-videos">
+            <video muted loop playsinline><source src="static/videos/wiping/episode_06/camera_0.mp4" type="video/mp4"/></video>
+            <video muted loop playsinline><source src="static/videos/wiping/episode_06/camera_2.mp4" type="video/mp4"/></video>
+          </div>
+          <span class="trial-label">Trial 1</span>
+        </div>
+        <div class="trial-cell" data-trial="2" data-episode="8">
+          <div class="trial-dual-videos">
+            <video muted loop playsinline><source src="static/videos/wiping/episode_08/camera_0.mp4" type="video/mp4"/></video>
+            <video muted loop playsinline><source src="static/videos/wiping/episode_08/camera_2.mp4" type="video/mp4"/></video>
+          </div>
+          <span class="trial-label">Trial 2</span>
+        </div>
+        <div class="trial-cell" data-trial="3" data-episode="9">
+          <div class="trial-dual-videos">
+            <video muted loop playsinline><source src="static/videos/wiping/episode_09/camera_0.mp4" type="video/mp4"/></video>
+            <video muted loop playsinline><source src="static/videos/wiping/episode_09/camera_2.mp4" type="video/mp4"/></video>
+          </div>
+          <span class="trial-label">Trial 3</span>
+        </div>
+        <div class="trial-cell" data-trial="4" data-episode="3">
+          <div class="trial-dual-videos">
+            <video muted loop playsinline><source src="static/videos/wiping/episode_03/camera_0.mp4" type="video/mp4"/></video>
+            <video muted loop playsinline><source src="static/videos/wiping/episode_03/camera_2.mp4" type="video/mp4"/></video>
+          </div>
+          <span class="trial-label">Trial 4</span>
+        </div>
+        <div class="trial-cell" data-trial="5" data-episode="5">
+          <div class="trial-dual-videos">
+            <video muted loop playsinline><source src="static/videos/wiping/episode_05/camera_0.mp4" type="video/mp4"/></video>
+            <video muted loop playsinline><source src="static/videos/wiping/episode_05/camera_2.mp4" type="video/mp4"/></video>
+          </div>
+          <span class="trial-label">Trial 5</span>
+        </div>
+        <div class="trial-cell" data-trial="6" data-episode="10">
+          <div class="trial-dual-videos">
+            <video muted loop playsinline><source src="static/videos/wiping/episode_10/camera_0.mp4" type="video/mp4"/></video>
+            <video muted loop playsinline><source src="static/videos/wiping/episode_10/camera_2.mp4" type="video/mp4"/></video>
+          </div>
+          <span class="trial-label">Trial 6</span>
+        </div>
+        <div class="trial-cell" data-trial="7" data-episode="11">
+          <div class="trial-dual-videos">
+            <video muted loop playsinline><source src="static/videos/wiping/episode_11/camera_0.mp4" type="video/mp4"/></video>
+            <video muted loop playsinline><source src="static/videos/wiping/episode_11/camera_2.mp4" type="video/mp4"/></video>
+          </div>
+          <span class="trial-label">Trial 7</span>
+        </div>
+        <div class="trial-cell" data-trial="8" data-episode="12">
+          <div class="trial-dual-videos">
+            <video muted loop playsinline><source src="static/videos/wiping/episode_12/camera_0.mp4" type="video/mp4"/></video>
+            <video muted loop playsinline><source src="static/videos/wiping/episode_12/camera_2.mp4" type="video/mp4"/></video>
+          </div>
+          <span class="trial-label">Trial 8</span>
+        </div>
+        <div class="trial-cell" data-trial="9" data-episode="13">
+          <div class="trial-dual-videos">
+            <video muted loop playsinline><source src="static/videos/wiping/episode_13/camera_0.mp4" type="video/mp4"/></video>
+            <video muted loop playsinline><source src="static/videos/wiping/episode_13/camera_2.mp4" type="video/mp4"/></video>
+          </div>
+          <span class="trial-label">Trial 9</span>
+        </div>
+        <div class="trial-cell" data-trial="10" data-episode="14">
+          <div class="trial-dual-videos">
+            <video muted loop playsinline><source src="static/videos/wiping/episode_14/camera_0.mp4" type="video/mp4"/></video>
+            <video muted loop playsinline><source src="static/videos/wiping/episode_14/camera_2.mp4" type="video/mp4"/></video>
+          </div>
+          <span class="trial-label">Trial 10</span>
+        </div>
+      </div>
+
+      <!-- Group 2: Black marks (episodes 0,1,2,4,7,15,16,17,18,19) -->
+      <div class="trial-group-header" style="background:#f1f5f9;color:#1e293b;border-left:3px solid #334155;">
+        <span class="trial-group-dot" style="background:#334155;"></span>
+        Instruction: Wipe the <strong>black marks</strong> from the whiteboard (Trials 11–20)
+      </div>
+      <div class="trial-grid trial-grid-dual">
+        <div class="trial-cell" data-trial="11" data-episode="0">
+          <div class="trial-dual-videos">
+            <video muted loop playsinline><source src="static/videos/wiping/episode_00/camera_0.mp4" type="video/mp4"/></video>
+            <video muted loop playsinline><source src="static/videos/wiping/episode_00/camera_2.mp4" type="video/mp4"/></video>
+          </div>
+          <span class="trial-label">Trial 11</span>
+        </div>
+        <div class="trial-cell" data-trial="12" data-episode="1">
+          <div class="trial-dual-videos">
+            <video muted loop playsinline><source src="static/videos/wiping/episode_01/camera_0.mp4" type="video/mp4"/></video>
+            <video muted loop playsinline><source src="static/videos/wiping/episode_01/camera_2.mp4" type="video/mp4"/></video>
+          </div>
+          <span class="trial-label">Trial 12</span>
+        </div>
+        <div class="trial-cell" data-trial="13" data-episode="2">
+          <div class="trial-dual-videos">
+            <video muted loop playsinline><source src="static/videos/wiping/episode_02/camera_0.mp4" type="video/mp4"/></video>
+            <video muted loop playsinline><source src="static/videos/wiping/episode_02/camera_2.mp4" type="video/mp4"/></video>
+          </div>
+          <span class="trial-label">Trial 13</span>
+        </div>
+        <div class="trial-cell" data-trial="14" data-episode="4">
+          <div class="trial-dual-videos">
+            <video muted loop playsinline><source src="static/videos/wiping/episode_04/camera_0.mp4" type="video/mp4"/></video>
+            <video muted loop playsinline><source src="static/videos/wiping/episode_04/camera_2.mp4" type="video/mp4"/></video>
+          </div>
+          <span class="trial-label">Trial 14</span>
+        </div>
+        <div class="trial-cell" data-trial="15" data-episode="7">
+          <div class="trial-dual-videos">
+            <video muted loop playsinline><source src="static/videos/wiping/episode_07/camera_0.mp4" type="video/mp4"/></video>
+            <video muted loop playsinline><source src="static/videos/wiping/episode_07/camera_2.mp4" type="video/mp4"/></video>
+          </div>
+          <span class="trial-label">Trial 15</span>
+        </div>
+        <div class="trial-cell" data-trial="16" data-episode="15">
+          <div class="trial-dual-videos">
+            <video muted loop playsinline><source src="static/videos/wiping/episode_15/camera_0.mp4" type="video/mp4"/></video>
+            <video muted loop playsinline><source src="static/videos/wiping/episode_15/camera_2.mp4" type="video/mp4"/></video>
+          </div>
+          <span class="trial-label">Trial 16</span>
+        </div>
+        <div class="trial-cell" data-trial="17" data-episode="16">
+          <div class="trial-dual-videos">
+            <video muted loop playsinline><source src="static/videos/wiping/episode_16/camera_0.mp4" type="video/mp4"/></video>
+            <video muted loop playsinline><source src="static/videos/wiping/episode_16/camera_2.mp4" type="video/mp4"/></video>
+          </div>
+          <span class="trial-label">Trial 17</span>
+        </div>
+        <div class="trial-cell" data-trial="18" data-episode="17">
+          <div class="trial-dual-videos">
+            <video muted loop playsinline><source src="static/videos/wiping/episode_17/camera_0.mp4" type="video/mp4"/></video>
+            <video muted loop playsinline><source src="static/videos/wiping/episode_17/camera_2.mp4" type="video/mp4"/></video>
+          </div>
+          <span class="trial-label">Trial 18</span>
+        </div>
+        <div class="trial-cell" data-trial="19" data-episode="18">
+          <div class="trial-dual-videos">
+            <video muted loop playsinline><source src="static/videos/wiping/episode_18/camera_0.mp4" type="video/mp4"/></video>
+            <video muted loop playsinline><source src="static/videos/wiping/episode_18/camera_2.mp4" type="video/mp4"/></video>
+          </div>
+          <span class="trial-label">Trial 19</span>
+        </div>
+        <div class="trial-cell" data-trial="20" data-episode="19">
+          <div class="trial-dual-videos">
+            <video muted loop playsinline><source src="static/videos/wiping/episode_19/camera_0.mp4" type="video/mp4"/></video>
+            <video muted loop playsinline><source src="static/videos/wiping/episode_19/camera_2.mp4" type="video/mp4"/></video>
+          </div>
+          <span class="trial-label">Trial 20</span>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="trial-panel" id="trials-insertion">
+
+      <!-- Group 1: Top-left hole (episodes 0–9) -->
+      <div class="trial-group-header blue-cup">
+        <span class="trial-group-dot"></span>
+        Instruction: Insert the purple peg into the <strong>top-left hole</strong> of the tabletop (Trials 1–10)
+      </div>
+      <div class="trial-grid trial-grid-dual">
+        <div class="trial-cell" data-trial="1">
+          <div class="trial-dual-videos">
+            <video muted loop playsinline><source src="static/videos/insertion/episode_00/camera_0.mp4" type="video/mp4"/></video>
+            <video muted loop playsinline><source src="static/videos/insertion/episode_00/camera_2.mp4" type="video/mp4"/></video>
+          </div>
+          <span class="trial-label">Trial 1</span>
+        </div>
+        <div class="trial-cell" data-trial="2">
+          <div class="trial-dual-videos">
+            <video muted loop playsinline><source src="static/videos/insertion/episode_01/camera_0.mp4" type="video/mp4"/></video>
+            <video muted loop playsinline><source src="static/videos/insertion/episode_01/camera_2.mp4" type="video/mp4"/></video>
+          </div>
+          <span class="trial-label">Trial 2</span>
+        </div>
+        <div class="trial-cell" data-trial="3">
+          <div class="trial-dual-videos">
+            <video muted loop playsinline><source src="static/videos/insertion/episode_02/camera_0.mp4" type="video/mp4"/></video>
+            <video muted loop playsinline><source src="static/videos/insertion/episode_02/camera_2.mp4" type="video/mp4"/></video>
+          </div>
+          <span class="trial-label">Trial 3</span>
+        </div>
+        <div class="trial-cell" data-trial="4">
+          <div class="trial-dual-videos">
+            <video muted loop playsinline><source src="static/videos/insertion/episode_03/camera_0.mp4" type="video/mp4"/></video>
+            <video muted loop playsinline><source src="static/videos/insertion/episode_03/camera_2.mp4" type="video/mp4"/></video>
+          </div>
+          <span class="trial-label">Trial 4</span>
+        </div>
+        <div class="trial-cell" data-trial="5">
+          <div class="trial-dual-videos">
+            <video muted loop playsinline><source src="static/videos/insertion/episode_04/camera_0.mp4" type="video/mp4"/></video>
+            <video muted loop playsinline><source src="static/videos/insertion/episode_04/camera_2.mp4" type="video/mp4"/></video>
+          </div>
+          <span class="trial-label">Trial 5</span>
+        </div>
+        <div class="trial-cell" data-trial="6">
+          <div class="trial-dual-videos">
+            <video muted loop playsinline><source src="static/videos/insertion/episode_05/camera_0.mp4" type="video/mp4"/></video>
+            <video muted loop playsinline><source src="static/videos/insertion/episode_05/camera_2.mp4" type="video/mp4"/></video>
+          </div>
+          <span class="trial-label">Trial 6</span>
+        </div>
+        <div class="trial-cell" data-trial="7">
+          <div class="trial-dual-videos">
+            <video muted loop playsinline><source src="static/videos/insertion/episode_06/camera_0.mp4" type="video/mp4"/></video>
+            <video muted loop playsinline><source src="static/videos/insertion/episode_06/camera_2.mp4" type="video/mp4"/></video>
+          </div>
+          <span class="trial-label">Trial 7</span>
+        </div>
+        <div class="trial-cell" data-trial="8">
+          <div class="trial-dual-videos">
+            <video muted loop playsinline><source src="static/videos/insertion/episode_07/camera_0.mp4" type="video/mp4"/></video>
+            <video muted loop playsinline><source src="static/videos/insertion/episode_07/camera_2.mp4" type="video/mp4"/></video>
+          </div>
+          <span class="trial-label">Trial 8</span>
+        </div>
+        <div class="trial-cell" data-trial="9">
+          <div class="trial-dual-videos">
+            <video muted loop playsinline><source src="static/videos/insertion/episode_08/camera_0.mp4" type="video/mp4"/></video>
+            <video muted loop playsinline><source src="static/videos/insertion/episode_08/camera_2.mp4" type="video/mp4"/></video>
+          </div>
+          <span class="trial-label">Trial 9</span>
+        </div>
+        <div class="trial-cell" data-trial="10">
+          <div class="trial-dual-videos">
+            <video muted loop playsinline><source src="static/videos/insertion/episode_09/camera_0.mp4" type="video/mp4"/></video>
+            <video muted loop playsinline><source src="static/videos/insertion/episode_09/camera_2.mp4" type="video/mp4"/></video>
+          </div>
+          <span class="trial-label">Trial 10</span>
+        </div>
+      </div>
+
+      <!-- Group 2: Top-right hole (episodes 10–19) -->
+      <div class="trial-group-header yellow-cup">
+        <span class="trial-group-dot"></span>
+        Instruction: Insert the purple peg into the <strong>top-right hole</strong> of the tabletop (Trials 11–20)
+      </div>
+      <div class="trial-grid trial-grid-dual">
+        <div class="trial-cell" data-trial="11">
+          <div class="trial-dual-videos">
+            <video muted loop playsinline><source src="static/videos/insertion/episode_10/camera_0.mp4" type="video/mp4"/></video>
+            <video muted loop playsinline><source src="static/videos/insertion/episode_10/camera_2.mp4" type="video/mp4"/></video>
+          </div>
+          <span class="trial-label">Trial 11</span>
+        </div>
+        <div class="trial-cell" data-trial="12">
+          <div class="trial-dual-videos">
+            <video muted loop playsinline><source src="static/videos/insertion/episode_11/camera_0.mp4" type="video/mp4"/></video>
+            <video muted loop playsinline><source src="static/videos/insertion/episode_11/camera_2.mp4" type="video/mp4"/></video>
+          </div>
+          <span class="trial-label">Trial 12</span>
+        </div>
+        <div class="trial-cell" data-trial="13">
+          <div class="trial-dual-videos">
+            <video muted loop playsinline><source src="static/videos/insertion/episode_12/camera_0.mp4" type="video/mp4"/></video>
+            <video muted loop playsinline><source src="static/videos/insertion/episode_12/camera_2.mp4" type="video/mp4"/></video>
+          </div>
+          <span class="trial-label">Trial 13</span>
+        </div>
+        <div class="trial-cell" data-trial="14">
+          <div class="trial-dual-videos">
+            <video muted loop playsinline><source src="static/videos/insertion/episode_13/camera_0.mp4" type="video/mp4"/></video>
+            <video muted loop playsinline><source src="static/videos/insertion/episode_13/camera_2.mp4" type="video/mp4"/></video>
+          </div>
+          <span class="trial-label">Trial 14</span>
+        </div>
+        <div class="trial-cell" data-trial="15">
+          <div class="trial-dual-videos">
+            <video muted loop playsinline><source src="static/videos/insertion/episode_14/camera_0.mp4" type="video/mp4"/></video>
+            <video muted loop playsinline><source src="static/videos/insertion/episode_14/camera_2.mp4" type="video/mp4"/></video>
+          </div>
+          <span class="trial-label">Trial 15</span>
+        </div>
+        <div class="trial-cell" data-trial="16">
+          <div class="trial-dual-videos">
+            <video muted loop playsinline><source src="static/videos/insertion/episode_15/camera_0.mp4" type="video/mp4"/></video>
+            <video muted loop playsinline><source src="static/videos/insertion/episode_15/camera_2.mp4" type="video/mp4"/></video>
+          </div>
+          <span class="trial-label">Trial 16</span>
+        </div>
+        <div class="trial-cell" data-trial="17">
+          <div class="trial-dual-videos">
+            <video muted loop playsinline><source src="static/videos/insertion/episode_16/camera_0.mp4" type="video/mp4"/></video>
+            <video muted loop playsinline><source src="static/videos/insertion/episode_16/camera_2.mp4" type="video/mp4"/></video>
+          </div>
+          <span class="trial-label">Trial 17</span>
+        </div>
+        <div class="trial-cell" data-trial="18">
+          <div class="trial-dual-videos">
+            <video muted loop playsinline><source src="static/videos/insertion/episode_17/camera_0.mp4" type="video/mp4"/></video>
+            <video muted loop playsinline><source src="static/videos/insertion/episode_17/camera_2.mp4" type="video/mp4"/></video>
+          </div>
+          <span class="trial-label">Trial 18</span>
+        </div>
+        <div class="trial-cell" data-trial="19">
+          <div class="trial-dual-videos">
+            <video muted loop playsinline><source src="static/videos/insertion/episode_18/camera_0.mp4" type="video/mp4"/></video>
+            <video muted loop playsinline><source src="static/videos/insertion/episode_18/camera_2.mp4" type="video/mp4"/></video>
+          </div>
+          <span class="trial-label">Trial 19</span>
+        </div>
+        <div class="trial-cell" data-trial="20">
+          <div class="trial-dual-videos">
+            <video muted loop playsinline><source src="static/videos/insertion/episode_19/camera_0.mp4" type="video/mp4"/></video>
+            <video muted loop playsinline><source src="static/videos/insertion/episode_19/camera_2.mp4" type="video/mp4"/></video>
+          </div>
+          <span class="trial-label">Trial 20</span>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- ─────────────── REWARD VISUALIZER ─────────────── -->
+<section class="section" id="reward-viz">
+  <div class="container">
+    <h2>Interactive Reward Visualization</h2>
+    <p class="section-subtitle">
+      Drag the scrubber (or click either plot) to step through a trial.
+      Each plot shows GT&nbsp;(solid) vs Predicted&nbsp;(dashed) reward curves
+      for every textual phase objective. Visual and tactile rewards use independent scales.
+    </p>
+
+    <!-- Task / trial selectors -->
+    <div class="rv-controls">
+      <div class="rv-select-group">
+        <label for="rv-task">Task</label>
+        <select id="rv-task">
+          <option value="pipette">Pipette</option>
+          <option value="wiping">Wiping</option>
+          <option value="insertion">Insertion</option>
+        </select>
+      </div>
+      <select id="rv-trial" hidden><option value="1" selected>Trial 1</option></select>
+      <div class="rv-step-chip">
+        t&nbsp;=&nbsp;<strong id="rv-step-label">0</strong>
+      </div>
+    </div>
+
+    <div class="rv-widget">
+
+      <!-- ── 4 observation panels ── -->
+      <div class="rv-obs-grid">
+
+        <div class="rv-obs-group">
+          <div class="rv-group-bar visual-bar">
+            <span class="rv-group-dot visual-dot"></span>Visual Observations
+          </div>
+          <div class="rv-obs-pair">
+            <div class="rv-obs-pane">
+              <div class="rv-obs-sublabel">Ground Truth</div>
+              <div class="rv-img-wrap">
+                <video id="rv-vgt-vid"   muted playsinline preload="auto"></video>
+                <img id="rv-vgt-img"  src="" alt="visual ground truth" style="display:none" />
+                <div class="rv-img-ph" id="rv-vgt-ph"><span>visual GT frame</span></div>
+              </div>
+            </div>
+            <div class="rv-obs-pane">
+              <div class="rv-obs-sublabel">Predicted</div>
+              <div class="rv-img-wrap">
+                <video id="rv-vpred-vid" muted playsinline preload="auto"></video>
+                <img id="rv-vpred-img" src="" alt="visual predicted" style="display:none" />
+                <div class="rv-img-ph" id="rv-vpred-ph"><span>visual pred frame</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="rv-obs-group">
+          <div class="rv-group-bar tactile-bar">
+            <span class="rv-group-dot tactile-dot"></span>Tactile Observations (GelSight)
+          </div>
+          <div class="rv-obs-pair">
+            <div class="rv-obs-pane">
+              <div class="rv-obs-sublabel">Ground Truth</div>
+              <div class="rv-img-wrap">
+                <video id="rv-tgt-vid"   muted playsinline preload="auto"></video>
+                <img id="rv-tgt-img"  src="" alt="tactile ground truth" style="display:none" />
+                <div class="rv-img-ph" id="rv-tgt-ph"><span>tactile GT frame</span></div>
+              </div>
+            </div>
+            <div class="rv-obs-pane">
+              <div class="rv-obs-sublabel">Predicted</div>
+              <div class="rv-img-wrap">
+                <video id="rv-tpred-vid" muted playsinline preload="auto"></video>
+                <img id="rv-tpred-img" src="" alt="tactile predicted" style="display:none" />
+                <div class="rv-img-ph" id="rv-tpred-ph"><span>tactile pred frame</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div><!-- /.rv-obs-grid -->
+
+      <!-- ── Two independent reward plots ── -->
+      <div class="rv-plots-grid">
+
+        <div class="rv-plot-pane">
+          <div class="rv-plot-title visual-title">Visual Reward</div>
+          <div class="rv-plot-wrap">
+            <canvas id="rv-visual-canvas"></canvas>
+          </div>
+          <div class="rv-legend" id="rv-legend-visual"></div>
+        </div>
+
+        <div class="rv-plot-pane">
+          <div class="rv-plot-title tactile-title">Tactile Reward</div>
+          <div class="rv-plot-wrap">
+            <canvas id="rv-tactile-canvas"></canvas>
+          </div>
+          <div class="rv-legend" id="rv-legend-tactile"></div>
+        </div>
+
+      </div><!-- /.rv-plots-grid -->
+
+      <!-- ── Shared scrubber ── -->
+      <div class="rv-scrubber-wrap">
+        <span class="rv-scrubber-edge">t&nbsp;=&nbsp;0</span>
+        <input type="range" id="rv-scrubber" min="0" max="99" value="0" step="1" />
+        <span class="rv-scrubber-edge" id="rv-scrubber-max">t&nbsp;=&nbsp;99</span>
+      </div>
+
+    </div><!-- /.rv-widget -->
+  </div>
+</section>
+
+<!-- ─────────────── WORLD MODEL IMAGINATION ─────────────── -->
+<section class="section section-alt" id="world-model">
+  <div class="container-wide">
+    <h2>World Model Imagination</h2>
+    <p class="section-subtitle">
+      The world model predicts future visual observations from both cameras and tactile sensors.
+      Each card shows ground truth (top row), model prediction (middle row), and their difference (bottom row)
+      across three views: front camera, wrist camera, and tactile image.
+      Double click any card to view it in full screen.
+    </p>
+
+    <div class="fm-controls">
+      <div class="fm-select-group">
+        <label for="wm-task">Task</label>
+        <select id="wm-task">
+          <option value="pipette">Pipette</option>
+          <option value="wiping">Wiping</option>
+          <option value="insertion">Insertion</option>
+        </select>
+      </div>
+      <div class="fm-select-group">
+        <label for="wm-outcome">Outcome</label>
+        <select id="wm-outcome">
+          <option value="success">Success</option>
+          <option value="failure">Failure</option>
+        </select>
+      </div>
+    </div>
+
+    <div id="wm-content"></div>
+  </div>
+</section>
+
+<!-- ─────────────── RESULTS ─────────────── -->
+<section class="section" id="results">
+  <div class="container-wide">
+    <h2>Results</h2>
+    <p class="section-subtitle">
+      ViTaL achieves consistent gains in both visual task completion and contact success
+      across all three real-world tasks. Hover any bar for the success rate and standard
+      error √(p(1−p)/n) over 20 trials.
+    </p>
+
+    <div class="results-controls">
+      <div class="rc-select-group">
+        <label for="rc-view">Show</label>
+        <select id="rc-view">
+          <option value="all">All methods</option>
+          <option value="visual">Visual steering only</option>
+          <option value="tactile">Tactile steering only</option>
+          <option value="naive">Naive fusion only</option>
+        </select>
+      </div>
+    </div>
+
+    <div id="rc-content"></div>
+    <div class="rc-legend" id="rc-legend"></div>
+    <p class="rc-caption">
+      Success rates (%) on Pipette, Wiping, Insertion, and the average across tasks.
+      ViTaL improves overall success by 51% over the base policy and outperforms all
+      unimodal baselines.
+    </p>
+  </div>
+</section>
+
+<!-- ─────────────── FAILURE MODES ─────────────── -->
+<section class="section section-alt" id="failure-modes">
+  <div class="container-wide">
+    <h2>How Do Baselines Compare to ViTaL?</h2>
+    <p class="section-subtitle">
+      Select a task and a baseline to see representative failure rollouts.
+      Each card shows the front camera (left) and the tactile image (right).
+      Double click any card to view it in full screen.
+    </p>
+
+    <div class="fm-controls">
+      <div class="fm-select-group">
+        <label for="fm-task">Task</label>
+        <select id="fm-task">
+          <option value="pipette">Pipette</option>
+          <option value="wiping">Wiping</option>
+          <option value="insertion">Insertion</option>
+        </select>
+      </div>
+      <div class="fm-select-group">
+        <label for="fm-baseline">Baseline</label>
+        <select id="fm-baseline">
+          <option value="base_policy">Base Policy</option>
+          <option value="visual_baseline">Visual Baseline</option>
+          <option value="tactile_baseline">Tactile Baseline</option>
+          <option value="naive_combination">Naive Combination</option>
+        </select>
+      </div>
+    </div>
+
+    <div id="fm-content"></div>
+  </div>
+</section>
+
+<!-- ─────────────── FOOTER ─────────────── -->
+<footer class="site-footer">
+  <div class="container">
+    <p>
+      Website template inspired by
+      <a href="https://nerfies.github.io" target="_blank">Nerfies</a>.
+      Source on <a href="https://github.com/corl2026vital/corl2026vital.github.io" target="_blank">GitHub</a>.
+    </p>
+  </div>
+</footer>
+
+<div id="rc-tooltip" class="rc-tooltip" style="display:none"></div>
+
+<script src="static/js/main.js?v=24"></script>
+<script src="static/js/reward-viz.js?v=24"></script>
+<script src="static/js/failure-modes.js?v=24"></script>
+<script src="static/js/world-model.js?v=24"></script>
+<script src="static/js/results-chart.js?v=24"></script>
+</body>
+</html>
