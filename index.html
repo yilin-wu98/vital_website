@@ -11,11 +11,6 @@
 </head>
 <body>
 
-<!-- ─────────────── HEADER ─────────────── -->
-<header class="site-header">
-  <span class="venue-badge">CoRL 2026</span>
-</header>
-
 <!-- ─────────────── HERO ─────────────── -->
 <section class="hero">
   <div class="container">
@@ -25,7 +20,15 @@
     </h1>
 
     <div class="authors">
-      <span class="author anon">Anonymous Authors</span>
+      <span class="author">Yilin Wu</span>
+      <span class="author">Zilin Si</span>
+      <span class="author">Zeynep Temel</span>
+      <span class="author">Oliver Kroemer</span>
+      <span class="author">Andrea Bajcsy</span>
+    </div>
+
+    <div class="affiliations">
+      <span>Carnegie Mellon University</span>
     </div>
 
     <div class="links">
@@ -62,34 +65,6 @@
   </div>
 </section>
 
-<!-- ─────────────── ABSTRACT ─────────────── -->
-<section class="section section-alt" id="abstract">
-  <div class="container container-narrow">
-    <h2>Abstract</h2>
-    <p>
-      Inference-time steering adapts pre-trained generative robot policies during
-      deployment by verifying candidate actions before execution. While prior methods
-      typically perform this verification only with visual observations, vision alone
-      is often insufficient for contact-rich manipulation, where success depends on
-      both global task progress and subtle local interactions such as contact force.
-      We introduce <strong>ViTaL</strong>, a visuo-tactile inference-time steering
-      framework that formulates multimodal guidance as a bi-level optimization problem.
-      At the high level, visual sampling-and-verification performs long-horizon mode
-      selection, deciding <em>what</em> behavior the robot should execute. At the low
-      level, tactile-guided diffusion editing refines the selected action sequence over
-      a shorter horizon to satisfy local contact requirements. To support outcome-based
-      steering, ViTaL learns a visuo-tactile latent world model and employs semantically
-      aligned visual and tactile verifiers, including a novel text-conditioned tactile
-      reward that scores predicted tactile futures directly in latent space. Across
-      three real-world contact-rich manipulation tasks, ViTaL improves overall success
-      by <strong>51%</strong> over the base policy, outperforms unimodal steering by at
-      least <strong>33%</strong>, and exceeds naive multimodal fusion by at least
-      <strong>20%</strong>. Website:
-      <a href="https://corl2026vital.github.io/" target="_blank" rel="noopener">corl2026vital.github.io</a>.
-    </p>
-  </div>
-</section>
-
 <!-- ─────────────── METHOD ─────────────── -->
 <section class="section" id="method">
   <div class="container">
@@ -111,6 +86,38 @@
         the first few steps via diffusion editing.
       </figcaption>
     </figure>
+
+    <!-- Highlighted contributions -->
+    <h3 class="contrib-title">Contributions</h3>
+    <ul class="contrib-list">
+      <li>
+        <span class="contrib-num">1</span>
+        <span>
+          We propose a <strong>bi-level multimodal guidance framework</strong> that uses
+          vision for long-horizon semantic mode selection and touch for targeted contact
+          refinement.
+        </span>
+      </li>
+      <li>
+        <span class="contrib-num">2</span>
+        <span>
+          We introduce, to our knowledge, the <strong>first language-conditioned tactile
+          reward in the world model's latent space</strong>, and use it with language-conditioned
+          visual rewards and a visuo-tactile latent world model for outcome-based policy
+          steering without task-specific reward learning.
+        </span>
+      </li>
+      <li>
+        <span class="contrib-num">3</span>
+        <span>
+          We conduct <strong>extensive real-world experiments</strong> across three
+          contact-rich manipulation tasks, where ViTaL improves overall success by
+          <strong>51%</strong> over the base policy, exceeds unimodal steering by at
+          least <strong>33%</strong>, and outperforms naive multimodal fusion by at
+          least <strong>20%</strong>.
+        </span>
+      </li>
+    </ul>
   </div>
 </section>
 

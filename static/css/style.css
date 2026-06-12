@@ -225,6 +225,54 @@ h3 { font-size: 1.15rem; font-weight: 600; }
 /* Widen method subtitle to match the wide figure */
 #method .section-subtitle { max-width: 900px; }
 
+/* ── Contributions ── */
+.contrib-title {
+  text-align: center;
+  margin: 3rem 0 1.75rem;
+  color: var(--accent);
+}
+.contrib-list {
+  list-style: none;
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.25rem;
+}
+.contrib-list li {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 0.9rem;
+  background: #fff4ed;
+  border: 1px solid #fdba74;
+  border-top: 3px solid var(--accent);
+  border-radius: var(--radius);
+  padding: 1.5rem 1.4rem;
+  line-height: 1.65;
+  color: #374151;
+}
+.contrib-list li strong { color: var(--accent); }
+.contrib-num {
+  flex: 0 0 auto;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 50%;
+  background: var(--accent);
+  color: #fff;
+  font-weight: 700;
+  font-size: 0.95rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+@media (max-width: 768px) {
+  .contrib-list { grid-template-columns: 1fr; }
+}
+
 /* ── Task tabs ── */
 .task-tabs {
   display: flex;
